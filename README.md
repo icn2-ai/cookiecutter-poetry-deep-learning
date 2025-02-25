@@ -1,16 +1,8 @@
-<p align="center">
-  <img width="600" src="https://raw.githubusercontent.com/fpgmaas/cookiecutter-poetry/main/docs/static/cookiecutter.svg">
-</p style = "margin-bottom: 2rem;">
+# Cookiecutter Poetry Deep Learning (ICN2)
 
 ---
 
-[![Release](https://img.shields.io/github/v/release/fpgmaas/cookiecutter-poetry)](https://pypi.org/project/cookiecutter-poetry/)
-[![Build status](https://img.shields.io/github/actions/workflow/status/fpgmaas/cookiecutter-poetry/main.yml?branch=main)](https://github.com/fpgmaas/cookiecutter-poetry/actions/workflows/main.yml?query=branch%3Amain)
-[![Supported Python versions](https://img.shields.io/pypi/pyversions/cookiecutter-poetry)](https://pypi.org/project/cookiecutter-poetry/)
-[![Docs](https://img.shields.io/badge/docs-gh--pages-blue)](https://fpgmaas.github.io/cookiecutter-poetry/)
-[![License](https://img.shields.io/github/license/fpgmaas/cookiecutter-poetry)](https://img.shields.io/github/license/fpgmaas/cookiecutter-poetry)
-
-This is a modern Cookiecutter template that can be used to initiate a Python project with all the necessary tools for development, testing, and deployment. It supports the following features:
+This is a Cookiecutter template for deep-learning Python projects. It has all the necessary tools for development, testing, and deployment: 
 
 - [Poetry](https://python-poetry.org/) for dependency management
 - CI/CD with [GitHub Actions](https://github.com/features/actions)
@@ -25,30 +17,54 @@ This is a modern Cookiecutter template that can be used to initiate a Python pro
 
 ---
 
+<!--
 <p align="center">
   <a href="https://fpgmaas.github.io/cookiecutter-poetry/">Documentation</a> - <a href="https://github.com/fpgmaas/cookiecutter-poetry-example">Example</a> -
   <a href="https://pypi.org/project/cookiecutter-poetry/">PyPI</a>
 </p>
+-->
 
 ---
 
-## Quickstart
+## Generated projects architecture
 
-On your local machine, navigate to the directory in which you want to
-create a project directory, and run the following two commands:
+The generated projects with this template will have the following architecture:
 
-```bash
-pip install cookiecutter-poetry
-ccp
+```
+project_name
+├── configs             # Configuration files for experiments
+├── data                # Data for training and testing
+├── docs                # Documentation files
+├── notebooks           # Jupyter notebooks
+├── tests               # Unit tests for the project
+├── weights             # Trained models
+├── project_slug (src)  # Code for the project 
+    ├── base
+    ├── data            # Data processing and loading
+    ├── logger          # Logging
+    ├── model           # Model definition, metrics, and losses
+    ├── trainer         # Trainer class
+    ├── utils           # Utility functions
+    ├── visualization   # Visualization functions
+    ├── test.py         
+    ├── train.py        
+├── Makefile
+├── README.md
 ```
 
-Alternatively, install `cookiecutter` and directly pass the URL to this
+Files for version control, documentation, and CI/CD are not shown in the tree above.
+
+## Quickstart
+
+On your local machine, install `cookiecutter` and directly pass the URL to this
 Github repository to the `cookiecutter` command:
 
 ```bash
 pip install cookiecutter
-cookiecutter https://github.com/fpgmaas/cookiecutter-poetry.git
+cookiecutter https://github.com/ai-icn2/cookiecutter-poetry-deep-learning.git
 ```
+
+If you have not installed poetry, follow the instructions [here](https://python-poetry.org/docs/#installation).
 
 Create a repository on GitHub, and then run the following commands, replacing `<project-name>`, with the name that you gave the Github repository and
 `<github_author_handle>` with your Github username.
@@ -72,15 +88,20 @@ You are now ready to start development on your project! The CI/CD
 pipeline will be triggered when you open a pull request, merge to main,
 or when you create a new release.
 
+
+<!-- 
 To finalize the set-up for publishing to PyPI or Artifactory, see
 [here](https://fpgmaas.github.io/cookiecutter-poetry/features/publishing/#set-up-for-pypi).
 For activating the automatic documentation with MkDocs, see
 [here](https://fpgmaas.github.io/cookiecutter-poetry/features/mkdocs/#enabling-the-documentation-on-github).
 To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/codecov/).
+--> 
 
 ## Acknowledgements
 
-This project is partially based on [Audrey
-Feldroy\'s](https://github.com/audreyfeldroy)\'s great
-[cookiecutter-pypackage](https://github.com/audreyfeldroy/cookiecutter-pypackage)
-repository.
+This project is based on [Florian Maas'](https://github.com/fpgmaas) repository,
+[cookiecutter-poetry](https://github.com/fpgmaas/cookiecutter-poetry), for the development of Python projects with 
+Poetry, including CI/CD and code quality tools. The generated projects' architecture is inspired by 
+[Victor Huang's](https://github.com/victoresque) template fo deep-learning projects, 
+[pytorch-template](https://github.com/victoresque/pytorch-template).
+

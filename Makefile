@@ -32,7 +32,6 @@ bake-and-test-deploy: ## For quick publishing to cookiecutter-poetry-example to 
 install: ## Install the poetry environment
 	@echo "🚀 Creating virtual environment using pyenv and poetry"
 	@poetry install
-	@poetry shell
 
 .PHONY: check
 check: ## Run code quality tools.
