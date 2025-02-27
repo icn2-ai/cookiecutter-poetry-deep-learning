@@ -12,7 +12,10 @@ requires-python= ">=3.9,<4.0"
 dependencies=[
     "torch(>=2.6.0, <3.0.0)",
     "torchvision(>=0.21.0, <0.22.0)",
-    "pandas(>=2.2.3, <3.0.0)"
+    "pandas(>=2.2.3, <3.0.0)",
+    "wandb (>=0.19.7,<0.20.0)",
+    "oyaml (>=1.0,<2.0)",
+    "tqdm (>=4.67.1,<5.0.0)"
 ]
 
 [tool.poetry.group.dev.dependencies]
@@ -38,6 +41,9 @@ mkdocs = "^1.4.2"
 mkdocs-material = "^9.2.7"
 mkdocstrings = {extras = ["python"], version = "^0.26.1"}
 {%- endif %}
+
+[tool.poetry]
+package-mode = false
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -66,10 +72,15 @@ venv = ".venv"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
+[tool.poetry]
+package-mode = false
+
 [tool.ruff]
 target-version = "py39"
 line-length = 120
 fix = true
+
+[tool.ruff.lint]
 select = [
     # flake8-2020
     "YTT",
@@ -121,5 +132,5 @@ branch = true
 source = ["{{cookiecutter.project_slug}}"]
 {% endif%}
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
