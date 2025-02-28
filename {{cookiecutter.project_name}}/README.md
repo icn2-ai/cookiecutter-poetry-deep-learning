@@ -17,7 +17,14 @@ git remote add origin https://github.com/{{cookiecutter.author_github_handle}}/{
 git push -u origin main
 ```
 
-Finally, install the environment and the pre-commit hooks with
+If this step has already been completed (you already have a github repository), you can modify this README file to present your project and add the following command to clone it: :
+
+```bash
+git clone https://github.com/{{cookiecutter.author_github_handle}}/{{cookiecutter.project_name}}.git
+````
+
+To manage the dependencies and the environment, we use Poetry. If you have not installed Poetry, follow the instructions 
+[here](https://python-poetry.org/docs/#installation). You will need, at least, **version 2.1.1 of Poetry**. Once poetry is installed, install the environment and the pre-commit hooks with
 
 ```bash
 make install
