@@ -1,8 +1,15 @@
+from typing import Callable
+
 import numpy as np
 import torch
+import torch.nn as nn
 import wandb
-from base import BaseTrainer
-from utils import inf_loop
+from torch.optim.lr_scheduler import _LRScheduler
+from torch.utils.data import DataLoader
+
+from {{cookiecutter.project_slug}}.base.base_trainer import BaseTrainer
+from {{cookiecutter.project_slug}}.parse_config import ConfigParser
+from {{cookiecutter.project_slug}}.utils import inf_loop
 
 
 class Trainer(BaseTrainer):
@@ -12,38 +19,39 @@ class Trainer(BaseTrainer):
 
     def __init__(
         self,
-        model,
-        criterion,
-        metric_ftns,
-        optimizer,
-        config,
-        device,
-        data_loader,
-        valid_data_loader=None,
-        lr_scheduler=None,
-        len_epoch=None,
-        log_step=None,
-    ):
+        model: nn.Module,
+        criterion: nn.Module,
+        metric_ftns: list[Callable],
+        optimizer: torch.optim.Optimizer,
+        config: ConfigParser,
+        device: torch.device,
+        train_data_loader: DataLoader,
+        val_data_loader: DataLoader | None = None,
+        lr_scheduler: _LRScheduler | None = None,
+        len_epoch: int | None = None,
+        log_step: int | None = None,
+    ) -> None:
         super().__init__(model, criterion, metric_ftns, optimizer, config)
         self.config = config
         self.device = device
-        self.data_loader = data_loader
+        self.train_data_loader = train_data_loader
         if len_epoch is None:
             # epoch-based training
-            self.len_epoch = len(self.data_loader)
+            self.len_epoch = len(self.train_data_loader)
         else:
             # iteration-based training
-            self.data_loader = inf_loop(data_loader)
+            self.train_data_loader = inf_loop(train_data_loader)
             self.len_epoch = len_epoch
-        self.valid_data_loader = valid_data_loader
-        self.do_validation = self.valid_data_loader is not None
+        self.val_data_loader = val_data_loader
         self.lr_scheduler = lr_scheduler
         if log_step is None:
-            self.log_step = int(np.sqrt(data_loader.batch_size))
+            self.log_step = (
+                int(np.sqrt(train_data_loader.batch_size)) if train_data_loader.batch_size is not None else 100
+            )
         else:
             self.log_step = log_step
 
-    def _train_epoch(self, epoch):
+    def _train_epoch(self, epoch: int) -> dict:
         """
         Training logic for an epoch
 
@@ -52,7 +60,7 @@ class Trainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
-        for batch_idx, (data, target) in enumerate(self.data_loader):
+        for batch_idx, (data, target) in enumerate(self.train_data_loader):
             data, target = data.to(self.device), target.to(self.device)
 
             self.optimizer.zero_grad()
@@ -75,8 +83,8 @@ class Trainer(BaseTrainer):
                 break
         log = self.train_metrics.result()
 
-        if self.do_validation:
-            val_log = self._valid_epoch(epoch)
+        val_log = self._valid_epoch(epoch)
+        if self.val_data_loader is not None:
             log.update(**{"val_" + k: v for k, v in val_log.items()})
             wandb.log(log, step=epoch * self.len_epoch)
 
@@ -84,17 +92,19 @@ class Trainer(BaseTrainer):
             self.lr_scheduler.step()
         return log
 
-    def _valid_epoch(self, epoch):
+    def _valid_epoch(self, epoch: int) -> dict:
         """
         Validate after training an epoch
 
         :param epoch: Integer, current training epoch.
         :return: A log that contains information about validation
         """
+        if self.val_data_loader is None:
+            return {}
         self.model.eval()
         self.valid_metrics.reset()
         with torch.no_grad():
-            for _batch_idx, (data, target) in enumerate(self.valid_data_loader):
+            for data, target in self.val_data_loader:
                 data, target = data.to(self.device), target.to(self.device)
 
                 output = self.model(data)
@@ -106,11 +116,13 @@ class Trainer(BaseTrainer):
 
         return self.valid_metrics.result()
 
-    def _progress(self, batch_idx):
+    def _progress(self, batch_idx: int) -> str:
         base = "[{}/{} ({:.0f}%)]"
-        if hasattr(self.data_loader, "n_samples"):
-            current = batch_idx * self.data_loader.batch_size
-            total = self.data_loader.n_samples
+        if hasattr(self.train_data_loader, "n_samples"):
+            current = (
+                batch_idx * self.train_data_loader.batch_size if self.train_data_loader.batch_size is not None else 1
+            )
+            total = self.train_data_loader.n_samples
         else:
             current = batch_idx
             total = self.len_epoch

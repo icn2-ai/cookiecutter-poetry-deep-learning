@@ -1,20 +1,24 @@
-name: Mnist_LeNet
+name: CookieCutterDL
+experiment_group: v0.0
 n_gpu: 1
 
 seed: null # Fix seed for reproducibility
 
 arch:
-  type: MnistModel
+  type: IdentityModel
   args: {}
 
-data_loader:
-  type: MnistDataLoader
+train_data_loader:
+  type: RandomVectorDataLoader
   args:
-    data_dir: "data/"
-    batch_size: 128
-    shuffle: true
-    validation_split: 0.1
-    num_workers: 2
+    num_samples: 1000
+    vector_size: 100
+
+validation_data_loader:
+  type: RandomVectorDataLoader
+  args:
+    num_samples: 1000
+    vector_size: 100
 
 optimizer:
   type: Adam
@@ -23,10 +27,12 @@ optimizer:
     weight_decay: 0
     amsgrad: true
 
-loss: "nll_loss"
+loss:
+  type: "MSELoss"
+  args: {}
+
 metrics:
-  - accuracy
-  - top_k_acc
+  - mse_metric
 
 lr_scheduler:
   type: StepLR
@@ -41,4 +47,5 @@ trainer:
   verbosity: 2
   monitor: "min val_loss"
   early_stop: 10
-  wandb: true
+  wandb: False
+  codecarbon_save_api: false

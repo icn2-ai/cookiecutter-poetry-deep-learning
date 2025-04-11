@@ -1,1 +1,1 @@
-from .data_loaders import MnistDataLoader as MnistDataLoader
+from .data_loaders import RandomVectorDataLoader as RandomVectorDataLoader

@@ -1,34 +1,28 @@
 import argparse
 
-import model.loss as module_loss
-import model.metric as module_metric
-import model.model as module_arch
 import torch
-from parse_config import ConfigParser
 from tqdm import tqdm
 
-import data.data_loaders as module_data
+import {{cookiecutter.project_slug}}.data.data_loaders as module_data
+import {{cookiecutter.project_slug}}.model.loss as module_loss
+import {{cookiecutter.project_slug}}.model.metric as module_metric
+import {{cookiecutter.project_slug}}.model.model as module_arch
+from {{cookiecutter.project_slug}}.parse_config import ConfigParser
 
 
-def main(config):
+def main(config: ConfigParser) -> None:
     logger = config.get_logger("test")
 
     # setup data instances
-    data_loader = getattr(module_data, config["data_loader"]["type"])(
-        config["data_loader"]["args"]["data_dir"],
-        batch_size=512,
-        shuffle=False,
-        validation_split=0.0,
-        training=False,
-        num_workers=2,
-    )
+    data_loader = config.init_obj("test_data_loader", module_data)
 
     # build model architecture
     model = config.init_obj("arch", module_arch)
     logger.info(model)
 
     # get function handles of loss and metrics
-    loss_fn = getattr(module_loss, config["loss"])
+    loss_config = config["loss"]
+    criterion = getattr(module_loss, loss_config["type"])(**loss_config["args"])
     metric_fns = [getattr(module_metric, met) for met in config["metrics"]]
 
     logger.info(f"Loading checkpoint: {config.resume} ...")
@@ -44,7 +38,7 @@ def main(config):
     model.eval()
 
     total_loss = 0.0
-    total_metrics = torch.zeros(len(metric_fns))
+    total_metrics = torch.zeros(len(metric_fns)).to(device)
 
     with torch.no_grad():
         for i, (data, target) in enumerate(tqdm(data_loader)):
@@ -56,7 +50,7 @@ def main(config):
             #
 
             # computing loss, metrics on test set
-            loss = loss_fn(output, target)
+            loss = criterion(output, target)
             batch_size = data.shape[0]
             total_loss += loss.item() * batch_size
             for i, metric in enumerate(metric_fns):
@@ -69,16 +63,22 @@ def main(config):
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser(description="PyTorch Template")
+    args = argparse.ArgumentParser(description="{{cookiecutter.project_name}} Test")
     args.add_argument(
-        "-c", "--config", default="../configs/config.yaml", type=str, help="config file path (default: None)"
+        "-c",
+        "--config",
+        default=None,
+        type=str,
+        help="config file path, should include test data loader field (default: None)",
+        required=True,
     )
     args.add_argument(
         "-r",
         "--resume",
-        default="saved/models/Mnist_LeNet/0227_123033/model_best.pth",
+        default=None,
         type=str,
         help="path to latest checkpoint (default: None)",
+        required=True,
     )
     args.add_argument("-d", "--device", default=None, type=str, help="indices of GPUs to enable (default: all)")
 

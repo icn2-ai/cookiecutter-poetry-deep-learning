@@ -1,3 +1,3 @@
-from .base_data_loader import *
-from .base_model import *
-from .base_trainer import *
+from .base_data_loader import BaseDataLoader as BaseDataLoader
+from .base_model import BaseModel as BaseModel
+from .base_trainer import BaseTrainer as BaseTrainer

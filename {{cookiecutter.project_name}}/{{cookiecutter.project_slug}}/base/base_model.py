@@ -1,14 +1,17 @@
-import torch.nn as nn
-import numpy as np
 from abc import abstractmethod
+
+import numpy as np
+import torch
+import torch.nn as nn
 
 
 class BaseModel(nn.Module):
     """
     Base class for all models
     """
+
     @abstractmethod
-    def forward(self, *inputs):
+    def forward(self, *inputs: torch.Tensor) -> torch.Tensor:
         """
         Forward pass logic
 
@@ -16,10 +19,10 @@ class BaseModel(nn.Module):
         """
         raise NotImplementedError
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Model prints with number of trainable parameters
         """
         model_parameters = filter(lambda p: p.requires_grad, self.parameters())
         params = sum([np.prod(p.size()) for p in model_parameters])
-        return super().__str__() + '\nTrainable parameters: {}'.format(params)
+        return super().__str__() + f"\nTrainable parameters: {params}"

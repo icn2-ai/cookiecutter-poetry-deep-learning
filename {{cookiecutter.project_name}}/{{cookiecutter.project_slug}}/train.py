@@ -1,26 +1,28 @@
 import argparse
 import collections
 
-import model.loss as module_loss
-import model.metric as module_metric
-import model.model as module_arch
 import torch
-from parse_config import ConfigParser
-from trainer import Trainer
-from utils import prepare_device, seed
 
-import data.data_loaders as module_data
+import {{cookiecutter.project_slug}}.data.data_loaders as module_data
+from {{cookiecutter.project_slug}}.model import loss as module_loss
+from {{cookiecutter.project_slug}}.model import metric as module_metric
+from {{cookiecutter.project_slug}}.model import model as module_arch
+from {{cookiecutter.project_slug}}.parse_config import ConfigParser
+from {{cookiecutter.project_slug}}.trainer import Trainer
+from {{cookiecutter.project_slug}}.utils import prepare_device, seed
 
 
-def main(config):
+def main(config: ConfigParser) -> None:
     if config.config["seed"] is not None:
         seed(config.config["seed"])
 
     logger = config.get_logger("train")
 
     # setup data instances
-    data_loader = config.init_obj("data_loader", module_data)
-    valid_data_loader = data_loader.split_validation()
+    train_data_loader = config.init_obj("train_data_loader", module_data)
+    val_data_loader = (
+        config.init_obj("validation_data_loader", module_data) if config["validation_data_loader"] else None
+    )
 
     # build model architecture, then print to console
     model = config.init_obj("arch", module_arch)
@@ -33,7 +35,8 @@ def main(config):
         model = torch.nn.DataParallel(model, device_ids=device_ids)
 
     # get function handles of loss and metrics
-    criterion = getattr(module_loss, config["loss"])
+    loss_config = config["loss"]
+    criterion = getattr(module_loss, loss_config["type"])(**loss_config["args"])
     metrics = [getattr(module_metric, met) for met in config["metrics"]]
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
@@ -48,8 +51,8 @@ def main(config):
         optimizer,
         config=config,
         device=device,
-        data_loader=data_loader,
-        valid_data_loader=valid_data_loader,
+        train_data_loader=train_data_loader,
+        val_data_loader=val_data_loader,
         lr_scheduler=lr_scheduler,
     )
 
@@ -57,7 +60,7 @@ def main(config):
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser(description="PyTorch Template")
+    args = argparse.ArgumentParser(description="{{cookiecutter.project_name}} Train")
     args.add_argument(
         "-c", "--config", default="../configs/config.yaml", type=str, help="config file path (default: None)"
     )

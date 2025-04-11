@@ -1,15 +1,26 @@
 import logging
 import os
-import oyaml as yaml
+import shutil
 from datetime import datetime
 from functools import partial, reduce
+from logging import Logger
 from operator import getitem
 from pathlib import Path
-from logger import setup_logging
+from typing import Any
+
+import oyaml as yaml  # type: ignore[import-untyped]
+
+from {{cookiecutter.project_slug}}.logger import setup_logging
 
 
 class ConfigParser:
-    def __init__(self, config, resume=None, modification=None, run_id=None):
+    def __init__(
+        self,
+        config: dict[Any, Any],
+        resume: Path | None = None,
+        modification: dict[Any, Any] | None = None,
+        run_id: str | None = None,
+    ) -> None:
         """
         class to parse configuration json file. Handles hyperparameters for training, initializations of modules, checkpoint saving
         and logging module.
@@ -45,7 +56,7 @@ class ConfigParser:
         self.log_levels = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
 
     @classmethod
-    def from_args(cls, args, options=""):
+    def from_args(cls, args: Any, options: Any = "") -> Any:
         """
         Initialize this class from some cli arguments. Used in train, test.
         """
@@ -79,7 +90,7 @@ class ConfigParser:
         modification = {opt.target: getattr(args, _get_opt_name(opt.flags)) for opt in options}
         return cls(config, resume, modification)
 
-    def init_obj(self, name, module, *args, **kwargs):
+    def init_obj(self, name: str, module: Any, *args: Any, **kwargs: Any) -> Any:
         """
         Finds a function handle with the name given as 'type' in config, and returns the
         instance initialized with corresponding arguments given.
@@ -96,7 +107,7 @@ class ConfigParser:
         module_args.update(kwargs)
         return getattr(module, module_name)(*args, **module_args)
 
-    def init_ftn(self, name, module, *args, **kwargs):
+    def init_ftn(self, name: str, module: Any, *args: Any, **kwargs: Any) -> Any:
         """
         Finds a function handle with the name given as 'type' in config, and returns the
         function with given arguments fixed with functools.partial.
@@ -113,11 +124,11 @@ class ConfigParser:
         module_args.update(kwargs)
         return partial(getattr(module, module_name), *args, **module_args)
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> Any:
         """Access items like ordinary dict."""
         return self.config[name]
 
-    def get_logger(self, name, verbosity=2):
+    def get_logger(self, name: str, verbosity: int = 2) -> Logger:
         msg_verbosity = f"verbosity option {verbosity} is invalid. Valid options are {self.log_levels.keys()}."
         if verbosity not in self.log_levels:
             raise ValueError(msg_verbosity)
@@ -125,22 +136,42 @@ class ConfigParser:
         logger.setLevel(self.log_levels[verbosity])
         return logger
 
+    def update_dir(self, name: str) -> None:
+        """
+        Update the last directory of both save_dir and log_dir with the name given.
+        """
+        # Delete the created directories that were created with os.
+        shutil.rmtree(self.save_dir)
+        shutil.rmtree(self.log_dir)
+
+        # Update the last directory of both save_dir and log_dir with the name given
+        self._save_dir = self.save_dir.parent / name
+        self._log_dir = self.log_dir.parent / name
+
+        # Make the new directories
+        self.save_dir.mkdir(parents=True, exist_ok=True)
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+
     # setting read-only attributes
     @property
-    def config(self):
+    def config(self) -> dict:
         return self._config
 
     @property
-    def save_dir(self):
+    def save_dir(self) -> Any:
         return self._save_dir
 
     @property
-    def log_dir(self):
+    def log_dir(self) -> Any:
         return self._log_dir
+
+    @property
+    def plot(self) -> Any:
+        return self.config["trainer"]["plot"]
 
 
 # helper functions to update config dict with custom cli options
-def _update_config(config, modification):
+def _update_config(config: dict, modification: dict | None) -> dict:
     if modification is None:
         return config
 
@@ -150,19 +181,19 @@ def _update_config(config, modification):
     return config
 
 
-def _get_opt_name(flags):
+def _get_opt_name(flags: str) -> str:
     for flg in flags:
         if flg.startswith("--"):
             return flg.replace("--", "")
     return flags[0].replace("--", "")
 
 
-def _set_by_path(tree, keys, value):
+def _set_by_path(tree: Any, keys: Any, value: Any) -> None:
     """Set a value in a nested object in tree by sequence of keys."""
     keys = keys.split(";")
     _get_by_path(tree, keys[:-1])[keys[-1]] = value
 
 
-def _get_by_path(tree, keys):
+def _get_by_path(tree: Any, keys: Any) -> Any:
     """Access a nested object in tree by sequence of keys."""
     return reduce(getitem, keys, tree)

@@ -1,16 +1,29 @@
-import torch
-import wandb
 from abc import abstractmethod
+from pathlib import Path
+from typing import Any, Callable
+
+import torch
+import torch.nn as nn
+import wandb
+from codecarbon import track_emissions  # type: ignore[import-untyped]
 from numpy import inf
-from utils import MetricTracker
+
+from {{cookiecutter.project_slug}}.parse_config import ConfigParser
+from {{cookiecutter.project_slug}}.src.utils import MetricTracker
 
 
 class BaseTrainer:
-    """
-    Base class for all trainers
-    """
-
-    def __init__(self, model, criterion, metric_ftns, optimizer, config):
+    def __init__(
+        self,
+        model: nn.Module,
+        criterion: nn.Module,
+        metric_ftns: list[Callable],
+        optimizer: torch.optim.Optimizer,
+        config: ConfigParser,
+    ) -> None:
+        """
+        Base class for all trainers
+        """
         self.config = config
         self.logger = config.get_logger("trainer", config["trainer"]["verbosity"])
 
@@ -27,7 +40,7 @@ class BaseTrainer:
         # configuration to monitor model performance and save best
         if self.monitor == "off":
             self.mnt_mode = "off"
-            self.mnt_best = 0
+            self.mnt_best = 0.0
         else:
             self.mnt_mode, self.mnt_metric = self.monitor.split()
             if self.mnt_mode not in ["min", "max"]:
@@ -45,11 +58,13 @@ class BaseTrainer:
         self.wandb = cfg_trainer["wandb"]
         self.wandb_init = False
 
+        self.codecarbon_save_api = cfg_trainer.get("codecarbon_save_api", False)
+
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
 
     @abstractmethod
-    def _train_epoch(self, epoch):
+    def _train_epoch(self, epoch: int) -> dict:
         """
         Training logic for an epoch
 
@@ -57,22 +72,45 @@ class BaseTrainer:
         """
         raise NotImplementedError
 
-    def _create_metric_trackers(self):
+    def _create_metric_trackers(self) -> None:
         """
         Create MetricTracker instances for training and validation
         """
         self.train_metrics = MetricTracker("loss", *[m.__name__ for m in self.metric_ftns])
         self.valid_metrics = MetricTracker("loss", *[m.__name__ for m in self.metric_ftns])
 
-    def _setup_wandb(self):
+    @staticmethod
+    def dynamic_track_emissions(func: Callable) -> Callable:
+        """
+        Decorator to dynamically track emissions during training. This is useful when you want to enable/disable
+        tracking emissions to the CodeCarbon API during training.
+        """
+
+        def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+            decorated_func = track_emissions(save_to_api=self.codecarbon_save_api)(func)
+            return decorated_func(self, *args, **kwargs)
+
+        return wrapper
+
+    def _setup_wandb(self) -> None:
+        """
+        Setup wandb for logging metrics. This function initializes wandb and sets the project name and group.
+        """
         if self.wandb and not self.wandb_init:
-            wandb.init(project=self.config.config["name"], config=self.config)
-            self.wandb_init = True
+            run = wandb.init(
+                project=self.config.config["name"], group=self.config["experiment_group"], config=self.config.config
+            )
+            if run:  # Check if wandb is running
+                self.logger.info(f"Wandb initialized with run id: {run.id}")
+                self.wandb_init = True
+                self.config.update_dir(run.name)
+                self.checkpoint_dir = self.config.save_dir
         elif not self.wandb:
             self.logger.warning("Wandb is not enabled. Enable it in config file to log metrics to wandb.")
             wandb.init(mode="disabled")
 
-    def train(self):
+    @dynamic_track_emissions
+    def train(self) -> None:
         """
         Full training logic
         """
@@ -126,7 +164,7 @@ class BaseTrainer:
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=best)
 
-    def _save_checkpoint(self, epoch, save_best=False):
+    def _save_checkpoint(self, epoch: int, save_best: bool = False) -> None:
         """
         Saving checkpoints
 
@@ -151,13 +189,12 @@ class BaseTrainer:
             torch.save(state, best_path)
             self.logger.info("Saving current best: model_best.pth ...")
 
-    def _resume_checkpoint(self, resume_path):
+    def _resume_checkpoint(self, resume_path: Path) -> None:
         """
         Resume from saved checkpoints
 
         :param resume_path: Checkpoint path to be resumed
         """
-        resume_path = str(resume_path)
         self.logger.info(f"Loading checkpoint: {resume_path} ...")
         checkpoint = torch.load(resume_path)
         self.start_epoch = checkpoint["epoch"] + 1

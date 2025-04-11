@@ -1,14 +1,20 @@
-import oyaml as yaml
 import logging
 import logging.config
 from pathlib import Path
+from typing import Union
+
+import oyaml as yaml  # type: ignore[import-untyped]
 
 
-def setup_logging(save_dir, log_config="logger/logger_config.yaml", default_level=logging.INFO):
+def setup_logging(
+    save_dir: Path, log_config: Union[str, Path] = "logger/logger_config.yaml", default_level: int = logging.INFO
+) -> None:
     """
     Setup logging configuration
     """
-    log_config = Path(log_config)
+    if isinstance(log_config, str):
+        log_config = Path(log_config)
+
     if log_config.is_file():
         with open(log_config) as f:
             config = yaml.safe_load(f.read())
