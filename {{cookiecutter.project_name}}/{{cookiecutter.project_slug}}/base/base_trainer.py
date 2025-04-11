@@ -9,7 +9,7 @@ from codecarbon import track_emissions  # type: ignore[import-untyped]
 from numpy import inf
 
 from {{cookiecutter.project_slug}}.parse_config import ConfigParser
-from {{cookiecutter.project_slug}}.src.utils import MetricTracker
+from {{cookiecutter.project_slug}}.utils import MetricTracker
 
 
 class BaseTrainer:

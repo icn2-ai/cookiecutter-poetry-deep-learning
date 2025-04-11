@@ -26,6 +26,9 @@ def main(config: ConfigParser) -> None:
     metric_fns = [getattr(module_metric, met) for met in config["metrics"]]
 
     logger.info(f"Loading checkpoint: {config.resume} ...")
+    if config.resume is None:
+        message = "No checkpoint provided for testing."
+        raise ValueError(message)
     checkpoint = torch.load(config.resume, weights_only=False)
     state_dict = checkpoint["state_dict"]
     if config["n_gpu"] > 1:
@@ -63,24 +66,23 @@ def main(config: ConfigParser) -> None:
 
 
 if __name__ == "__main__":
-    args = argparse.ArgumentParser(description="{{cookiecutter.project_name}} Test")
+    args = argparse.ArgumentParser(description="PyTorch Template")
     args.add_argument(
         "-c",
         "--config",
-        default=None,
+        default="saved/models/CookieCutterDL/0411_123152/config.yaml",
         type=str,
         help="config file path, should include test data loader field (default: None)",
-        required=True,
     )
     args.add_argument(
         "-r",
         "--resume",
-        default=None,
+        default="saved/models/CookieCutterDL/0411_123152/model_best.pth",
         type=str,
         help="path to latest checkpoint (default: None)",
-        required=True,
     )
     args.add_argument("-d", "--device", default=None, type=str, help="indices of GPUs to enable (default: all)")
 
     config = ConfigParser.from_args(args)
     main(config)
+
