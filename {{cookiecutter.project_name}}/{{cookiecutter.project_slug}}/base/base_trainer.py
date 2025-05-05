@@ -103,7 +103,8 @@ class BaseTrainer:
             if run:  # Check if wandb is running
                 self.logger.info(f"Wandb initialized with run id: {run.id}")
                 self.wandb_init = True
-                self.config.update_dir(run.name)
+                if run.name is not None:
+                    self.config.update_dir(run.name)
                 self.checkpoint_dir = self.config.save_dir
         elif not self.wandb:
             self.logger.warning("Wandb is not enabled. Enable it in config file to log metrics to wandb.")
