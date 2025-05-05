@@ -61,7 +61,7 @@ Github repository to the `cookiecutter` command:
 
 ```bash
 pip install cookiecutter
-cookiecutter https://github.com/ai-icn2/cookiecutter-poetry-deep-learning.git
+cookiecutter https://github.com/icn2-ai/cookiecutter-poetry-deep-learning.git
 ```
 
 If you have not installed poetry, follow the instructions [here](https://python-poetry.org/docs/#installation).
