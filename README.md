@@ -78,11 +78,20 @@ git remote add origin git@github.com:<github_author_handle>/<project_name>.git
 git push -u origin main
 ```
 
-Finally, install the environment and the pre-commit hooks with
+Install the environment and the pre-commit hooks with:
 
 ```bash
 make install
 ```
+
+Then, before making the push to the remote repository, run the pre-commit hooks with:
+
+```bash
+make check
+```
+
+It might give an error the first time you run it, but `mypy` and `ruff` will correct the code style and type hints. You can run the pre-commit hooks again to check if everything is correct.
+After that, you can do the push. 
 
 You are now ready to start development on your project! The CI/CD
 pipeline will be triggered when you open a pull request, merge to main,
